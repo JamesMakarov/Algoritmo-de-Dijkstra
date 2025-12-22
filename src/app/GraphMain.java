@@ -160,7 +160,11 @@ public class GraphMain extends Application {
         btnClear.setStyle("-fx-background-color: #ff4444; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5; -fx-cursor: hand;");
         btnClear.setOnAction(e -> clearGraph());
 
-        ToolBar tb = new ToolBar(btnMove, btnAddNode, btnAddEdge, sep1, btnRemove, sep2, btnSetStart, btnSetEnd, new Separator(), btnRun, btnClear);
+        Button btnRandom = new Button("🎲 Gerar Grafo");
+        btnRandom.setStyle("-fx-background-color: #9b59b6; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5; -fx-cursor: hand;");
+        btnRandom.setOnAction(e -> generateRandomGraph());
+
+        ToolBar tb = new ToolBar(btnMove, btnAddNode, btnAddEdge, sep1, btnRemove, sep2, btnSetStart, btnSetEnd, new Separator(), btnRun, btnClear, btnRandom);
         tb.setStyle("-fx-background-color: " + TOOLBAR_COLOR + "; -fx-padding: 10px; -fx-spacing: 10px;");
         return tb;
     }
@@ -511,5 +515,60 @@ public class GraphMain extends Application {
         });
 
         alert.showAndWait();
+    }
+
+    private void generateRandomGraph() {
+        clearGraph(); // Limpa tudo antes
+
+        java.util.Random rand = new java.util.Random();
+        int numNodes = 30; // Quantidade de nós (aumente para 50 se quiser mais caos!)
+        int width = 900;
+        int height = 600;
+
+        List<Vertex> vertices = new ArrayList<>();
+
+        // 1. Cria Nós espalhados
+        for (int i = 0; i < numNodes; i++) {
+            double x = 50 + rand.nextDouble() * (width - 100);
+            double y = 50 + rand.nextDouble() * (height - 150); // -150 pra não pegar na toolbar/status
+            createNode(x, y);
+        }
+
+        // Recupera os nós criados do mapa para conectar
+        vertices.addAll(nodeMap.keySet());
+
+        // 2. Cria Arestas Aleatórias
+        // Cada nó vai tentar se conectar a 2 ou 3 outros nós aleatórios
+        for (Vertex u : vertices) {
+            int connections = 1 + rand.nextInt(3); // 1 a 3 conexões por nó
+
+            for (int j = 0; j < connections; j++) {
+                Vertex v = vertices.get(rand.nextInt(vertices.size()));
+
+                // Evita auto-loop e arestas duplicadas (simplificado)
+                if (u != v) {
+                    double weight = 1 + rand.nextInt(20); // Peso entre 1 e 20
+
+                    // Cria no modelo
+                    u.addEdge(v, weight);
+
+                    // Cria no visual
+                    Edge realEdge = u.getEdges().get(u.getEdges().size() - 1);
+                    NodeFX sourceFX = nodeMap.get(u);
+                    NodeFX targetFX = nodeMap.get(v);
+
+                    EdgeFX edgeFX = new EdgeFX(realEdge, sourceFX, targetFX);
+                    edgeFX.setOnMouseClicked(ev -> {
+                        if (currentMode == Mode.REMOVE) removeEdge(realEdge);
+                    });
+
+                    edgeMap.put(realEdge, edgeFX);
+                    // Adiciona no índice 1 (acima do grid, abaixo dos nós)
+                    graphPane.getChildren().add(1, edgeFX);
+                }
+            }
+        }
+
+        statusLabel.setText("✨ Grafo Aleatório Gerado! Selecione Início e Fim.");
     }
 }

@@ -31,10 +31,10 @@ public class NodeFX extends StackPane {
     private Consumer<NodeFX> clickHandler;
 
     // CORES DO TEMA
-    private static final Color COLOR_NORMAL = Color.web("#00d2ff"); // Azul Neon
-    private static final Color COLOR_SELECTED = Color.web("#ff007f"); // Rosa Cyberpunk
-    private static final Color COLOR_VISITING = Color.web("#ffd700"); // Dourado
-    private static final Color COLOR_FINISHED = Color.web("#39ff14"); // Verde Neon
+    private static final Color COLOR_NORMAL = Color.web("#00d2ff");
+    private static final Color COLOR_SELECTED = Color.web("#ff007f");
+    private static final Color COLOR_VISITING = Color.web("#ffd700");
+    private static final Color COLOR_FINISHED = Color.web("#39ff14");
     private static final Color COLOR_TEXT = Color.WHITE;
 
     public NodeFX(Vertex vertex, double x, double y) {
@@ -43,22 +43,21 @@ public class NodeFX extends StackPane {
         setLayoutX(x);
         setLayoutY(y);
 
-        // 1. A BOLINHA (Com Gradiente 3D)
-        this.circle = new Circle(22);
+        // --- TAMANHO REDUZIDO AQUI ---
+        this.circle = new Circle(15); // Era 22
         updateColor(COLOR_NORMAL);
 
-        // Efeito de sombra/brilho externo
         DropShadow shadow = new DropShadow();
         shadow.setColor(Color.BLACK);
         shadow.setRadius(10);
         shadow.setSpread(0.2);
         this.circle.setEffect(shadow);
 
-        // 2. O TEXTO
         this.textLabel = new Text(vertex.getName());
         this.textLabel.setFill(COLOR_TEXT);
-        this.textLabel.setFont(Font.font("Segoe UI", FontWeight.BOLD, 14));
-        // Sombra leve no texto para leitura
+        // Fonte levemente menor
+        this.textLabel.setFont(Font.font("Segoe UI", FontWeight.BOLD, 11));
+
         DropShadow textShadow = new DropShadow(2, Color.BLACK);
         this.textLabel.setEffect(textShadow);
 
@@ -66,7 +65,6 @@ public class NodeFX extends StackPane {
 
         initMouseEvents();
 
-        // Animação de entrada (Pop-up)
         setScaleX(0); setScaleY(0);
         ScaleTransition st = new ScaleTransition(Duration.millis(300), this);
         st.setToX(1); st.setToY(1);
@@ -74,18 +72,17 @@ public class NodeFX extends StackPane {
     }
 
     private void updateColor(Color baseColor) {
-        // Cria um gradiente radial para parecer uma esfera
         RadialGradient gradient = new RadialGradient(
                 0, 0,
-                0.3, 0.3, // Ponto de luz deslocado (topo esquerda)
-                0.7,      // Raio
+                0.3, 0.3,
+                0.7,
                 true,
                 CycleMethod.NO_CYCLE,
-                new Stop(0, baseColor.deriveColor(0, 0.5, 1.5, 1)), // Centro mais claro
-                new Stop(1, baseColor.deriveColor(0, 1, 0.8, 1))    // Borda mais escura
+                new Stop(0, baseColor.deriveColor(0, 0.5, 1.5, 1)),
+                new Stop(1, baseColor.deriveColor(0, 1, 0.8, 1))
         );
         this.circle.setFill(gradient);
-        this.circle.setStroke(Color.WHITE.deriveColor(0, 1, 1, 0.5)); // Borda fina translúcida
+        this.circle.setStroke(Color.WHITE.deriveColor(0, 1, 1, 0.5));
         this.circle.setStrokeWidth(1.5);
     }
 
@@ -109,7 +106,7 @@ public class NodeFX extends StackPane {
                 mouseAnchorX = event.getSceneX() - getLayoutX();
                 mouseAnchorY = event.getSceneY() - getLayoutY();
                 setCursor(Cursor.CLOSED_HAND);
-                toFront(); // Traz para frente ao clicar
+                toFront();
             }
             isDragging = false;
             event.consume();
@@ -138,13 +135,11 @@ public class NodeFX extends StackPane {
             event.consume();
         });
 
-        // Efeito ao passar o mouse (Hover)
         setOnMouseEntered(e -> {
             if (!e.isPrimaryButtonDown()) {
                 setCursor(isDraggable ? Cursor.OPEN_HAND : Cursor.HAND);
-                // Leve aumento
                 ScaleTransition st = new ScaleTransition(Duration.millis(100), this);
-                st.setToX(1.1); st.setToY(1.1);
+                st.setToX(1.2); st.setToY(1.2); // Aumentei o efeito hover pra compensar o tamanho pequeno
                 st.play();
             }
         });
@@ -159,18 +154,16 @@ public class NodeFX extends StackPane {
     public Vertex getVertex() { return vertex; }
 
     public void setColor(Color color) {
-        // Mapeia cores simples para nossos gradientes complexos
         if (color.equals(Color.YELLOW)) updateColor(COLOR_VISITING);
         else if (color.equals(Color.LIGHTGREEN) || color.equals(Color.GREEN)) updateColor(COLOR_FINISHED);
-        else if (color.equals(Color.RED)) updateColor(Color.RED); // Erro/Destino
+        else if (color.equals(Color.RED)) updateColor(Color.RED);
         else if (color.equals(Color.LIGHTGRAY)) updateColor(COLOR_NORMAL);
-        else updateColor(color); // Cor customizada (ex: seleção verde)
+        else updateColor(color);
     }
 
     public void setSelected(boolean selected) {
         if (selected) {
             updateColor(COLOR_SELECTED);
-            // Efeito de brilho pulsante poderia ser adicionado aqui
         } else {
             updateColor(COLOR_NORMAL);
         }

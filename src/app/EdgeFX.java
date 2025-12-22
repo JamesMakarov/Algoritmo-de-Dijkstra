@@ -18,38 +18,34 @@ public class EdgeFX extends Group {
     private final Line line;
     private final Polygon arrowHead;
     private final Text weightText;
-    private final Rectangle weightBg; // Fundo do texto (Pill shape)
+    private final Rectangle weightBg;
 
-    private static final double NODE_RADIUS = 22.0;
+    // --- IMPORTANTE: Raio ajustado para coincidir com o NodeFX ---
+    private static final double NODE_RADIUS = 15.0;
 
     public EdgeFX(Edge edge, NodeFX source, NodeFX target) {
         this.edge = edge;
 
-        // 1. A LINHA
         this.line = new Line();
-        this.line.setStroke(Color.web("#aaaaaa")); // Cinza claro
+        this.line.setStroke(Color.web("#aaaaaa"));
         this.line.setStrokeWidth(2);
-        this.line.setOpacity(0.6); // Levemente transparente para não poluir
+        this.line.setOpacity(0.6);
 
-        // 2. A SETA
         this.arrowHead = new Polygon();
         this.arrowHead.setFill(Color.web("#aaaaaa"));
 
-        // 3. O TEXTO COM FUNDO
         this.weightText = new Text(String.valueOf((int) edge.getWeight()));
         this.weightText.setFont(Font.font("Segoe UI", FontWeight.BOLD, 12));
         this.weightText.setFill(Color.WHITE);
 
         this.weightBg = new Rectangle();
-        this.weightBg.setFill(Color.web("#2b2b2b")); // Fundo escuro igual ao app
+        this.weightBg.setFill(Color.web("#2b2b2b"));
         this.weightBg.setStroke(Color.web("#aaaaaa"));
         this.weightBg.setStrokeWidth(1);
         this.weightBg.setArcWidth(10);
         this.weightBg.setArcHeight(10);
 
-        // Agrupar texto e fundo
         Group weightLabelGroup = new Group(weightBg, weightText);
-        // Sombra para destacar o peso das linhas
         weightLabelGroup.setEffect(new DropShadow(5, Color.BLACK));
 
         getChildren().addAll(line, arrowHead, weightLabelGroup);
@@ -73,25 +69,21 @@ public class EdgeFX extends Group {
         double dy = ty - sy;
         double angle = Math.atan2(dy, dx);
 
-        // Linha
         line.setStartX(sx);
         line.setStartY(sy);
 
-        double subtractRadius = NODE_RADIUS + 5; // +5 para não colar na bolinha
+        double subtractRadius = NODE_RADIUS + 5; // +5 de folga
         double endLineX = tx - subtractRadius * Math.cos(angle);
         double endLineY = ty - subtractRadius * Math.sin(angle);
 
         line.setEndX(endLineX);
         line.setEndY(endLineY);
 
-        // Seta
         drawArrowHead(endLineX, endLineY, angle);
 
-        // Texto (Posicionado no meio)
         double midX = (sx + tx) / 2;
         double midY = (sy + ty) / 2;
 
-        // Ajusta tamanho do fundo baseado no texto
         double textW = weightText.getLayoutBounds().getWidth() + 10;
         double textH = weightText.getLayoutBounds().getHeight() + 4;
 
@@ -105,7 +97,7 @@ public class EdgeFX extends Group {
     }
 
     private void drawArrowHead(double x, double y, double angle) {
-        double arrowLength = 12;
+        double arrowLength = 10; // Reduzi levemente a seta também
         double x1 = x - arrowLength * Math.cos(angle - Math.PI / 6);
         double y1 = y - arrowLength * Math.sin(angle - Math.PI / 6);
         double x2 = x - arrowLength * Math.cos(angle + Math.PI / 6);
@@ -120,11 +112,11 @@ public class EdgeFX extends Group {
 
         if (color.equals(Color.GREEN) || color == Color.GREEN) {
             line.setOpacity(1.0);
-            line.setStroke(Color.web("#39ff14")); // Verde Neon
+            line.setStroke(Color.web("#39ff14"));
             arrowHead.setFill(Color.web("#39ff14"));
-            line.setEffect(new DropShadow(10, Color.web("#39ff14"))); // Brilho Neon
+            line.setEffect(new DropShadow(10, Color.web("#39ff14")));
         } else if (color.equals(Color.RED)) {
-            line.setOpacity(0.3); // Fica apagadinho
+            line.setOpacity(0.3);
             line.setEffect(null);
         } else {
             line.setOpacity(0.6);
