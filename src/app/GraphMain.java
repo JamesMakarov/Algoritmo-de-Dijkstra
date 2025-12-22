@@ -8,9 +8,7 @@ import javafx.geometry.Insets;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
-import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 import model.Edge;
@@ -22,22 +20,19 @@ import java.util.Optional;
 
 public class GraphMain extends Application {
 
-    // Componentes da Interface
     private Pane graphPane;
     private ToggleGroup modeGroup;
     private Label statusLabel;
 
-    // Estados da Aplicação
-    private enum Mode { ADD_NODE, ADD_EDGE, SELECT_SOURCE, SELECT_TARGET, NONE }
+    // Adicionei o modo MOVE
+    private enum Mode { MOVE, ADD_NODE, ADD_EDGE, SELECT_SOURCE, SELECT_TARGET, NONE }
     private Mode currentMode = Mode.NONE;
 
-    // Dados temporários para interações
     private Vertex selectedSourceForEdge = null;
     private Vertex startNode = null;
     private Vertex endNode = null;
-    private int nodeCounter = 1; // Para nomear automaticamente (Nó 1, Nó 2...)
+    private int nodeCounter = 1;
 
-    // Mapas de visualização
     private Map<Vertex, NodeFX> nodeMap = new HashMap<>();
     private Map<Edge, EdgeFX> edgeMap = new HashMap<>();
 
@@ -45,11 +40,10 @@ public class GraphMain extends Application {
     public void start(Stage primaryStage) {
         BorderPane root = new BorderPane();
 
-        // 1. ÁREA DO GRAFO (Centro)
         graphPane = new Pane();
         graphPane.setStyle("-fx-background-color: #f4f4f4; -fx-border-color: #ddd;");
 
-        // Evento: Clicar no fundo vazio
+        // Só cria nó se estiver no modo ADD_NODE
         graphPane.setOnMouseClicked(event -> {
             if (currentMode == Mode.ADD_NODE) {
                 createNode(event.getX(), event.getY());
@@ -57,13 +51,9 @@ public class GraphMain extends Application {
         });
 
         root.setCenter(graphPane);
+        root.setTop(createToolBar());
 
-        // 2. BARRA DE FERRAMENTAS (Topo)
-        ToolBar toolBar = createToolBar();
-        root.setTop(toolBar);
-
-        // 3. BARRA DE STATUS (Fundo)
-        statusLabel = new Label("Bem-vindo! Selecione 'Adicionar Nó' para começar.");
+        statusLabel = new Label("Bem-vindo! Selecione uma ferramenta.");
         statusLabel.setPadding(new Insets(5));
         root.setBottom(statusLabel);
 
@@ -76,98 +66,108 @@ public class GraphMain extends Application {
     private ToolBar createToolBar() {
         modeGroup = new ToggleGroup();
 
-        // Botões de Modo
-        ToggleButton btnAddNode = new ToggleButton("Adicionar Nó");
+        // --- BOTÃO DE MOVER (NOVO) ---
+        ToggleButton btnMove = new ToggleButton("✋ Mover");
+        btnMove.setToggleGroup(modeGroup);
+        btnMove.setOnAction(e -> setMode(Mode.MOVE, "Modo de Movimentação: Arraste os nós."));
+
+        ToggleButton btnAddNode = new ToggleButton("➕ Nó");
         btnAddNode.setToggleGroup(modeGroup);
         btnAddNode.setOnAction(e -> setMode(Mode.ADD_NODE, "Clique na área branca para criar vértices."));
 
-        ToggleButton btnAddEdge = new ToggleButton("Adicionar Aresta");
+        ToggleButton btnAddEdge = new ToggleButton("🔗 Aresta");
         btnAddEdge.setToggleGroup(modeGroup);
-        btnAddEdge.setOnAction(e -> setMode(Mode.ADD_EDGE, "Clique no nó de Origem, depois no de Destino."));
+        btnAddEdge.setOnAction(e -> setMode(Mode.ADD_EDGE, "Clique na Origem -> depois no Destino."));
 
-        ToggleButton btnSetStart = new ToggleButton("Definir Início");
+        ToggleButton btnSetStart = new ToggleButton("🚩 Início");
         btnSetStart.setToggleGroup(modeGroup);
-        btnSetStart.setOnAction(e -> setMode(Mode.SELECT_SOURCE, "Clique no nó de partida para o algoritmo."));
+        btnSetStart.setOnAction(e -> setMode(Mode.SELECT_SOURCE, "Selecione o ponto de partida."));
 
-        ToggleButton btnSetEnd = new ToggleButton("Definir Fim");
+        ToggleButton btnSetEnd = new ToggleButton("🏁 Fim");
         btnSetEnd.setToggleGroup(modeGroup);
-        btnSetEnd.setOnAction(e -> setMode(Mode.SELECT_TARGET, "Clique no nó de destino."));
+        btnSetEnd.setOnAction(e -> setMode(Mode.SELECT_TARGET, "Selecione o destino."));
 
-        // --- A CORREÇÃO ESTÁ AQUI ---
-        // Crie dois objetos diferentes em vez de reutilizar a variável "separator"
         Separator sep1 = new Separator();
         Separator sep2 = new Separator();
 
-        Button btnRun = new Button("RODAR DIJKSTRA ▶");
+        Button btnRun = new Button("RODAR ▶");
         btnRun.setStyle("-fx-font-weight: bold; -fx-text-fill: green;");
         btnRun.setOnAction(e -> runDijkstra());
 
-        Button btnClear = new Button("Limpar Tudo");
+        Button btnClear = new Button("Limpar");
         btnClear.setStyle("-fx-text-fill: red;");
         btnClear.setOnAction(e -> clearGraph());
 
-        // Use sep1 e sep2 na lista
-        return new ToolBar(btnAddNode, btnAddEdge, sep1, btnSetStart, btnSetEnd, sep2, btnRun, btnClear);
+        return new ToolBar(btnMove, btnAddNode, btnAddEdge, sep1, btnSetStart, btnSetEnd, sep2, btnRun, btnClear);
     }
 
     private void setMode(Mode mode, String message) {
         this.currentMode = mode;
         this.statusLabel.setText(message);
-        // Reseta seleções parciais se mudar de modo
+
+        // Limpa seleções parciais
         if (selectedSourceForEdge != null) {
             nodeMap.get(selectedSourceForEdge).setSelected(false);
             selectedSourceForEdge = null;
         }
-    }
 
-    // --- LÓGICA DE CRIAÇÃO ---
+        // --- LÓGICA DE TRAVAMENTO ---
+        // Se for Modo MOVE, destrava todos os nós. Se não for, trava todos.
+        boolean canMove = (mode == Mode.MOVE);
+        for (NodeFX node : nodeMap.values()) {
+            node.setDraggable(canMove);
+        }
+    }
 
     private void createNode(double x, double y) {
         String name = "No " + nodeCounter++;
         Vertex v = new Vertex(name);
-
         NodeFX nodeFX = new NodeFX(v, x, y);
 
-        // Evento: Clicar numa bolinha existente
-        nodeFX.setOnMouseClicked(event -> handleNodeClick(nodeFX));
+        // Configura se nasce travado ou solto dependendo do modo atual
+        nodeFX.setDraggable(currentMode == Mode.MOVE);
+
+        nodeFX.setOnNodeClickListener(this::handleNodeClick);
 
         nodeMap.put(v, nodeFX);
         graphPane.getChildren().add(nodeFX);
     }
 
     private void handleNodeClick(NodeFX nodeFX) {
+        // Se estiver movendo, ignoramos cliques lógicos (ou apenas selecionamos visualmente)
+        if (currentMode == Mode.MOVE) {
+            return;
+        }
+
         Vertex v = nodeFX.getVertex();
 
         switch (currentMode) {
             case ADD_EDGE:
                 if (selectedSourceForEdge == null) {
-                    // Passo 1: Selecionou a origem
                     selectedSourceForEdge = v;
                     nodeFX.setSelected(true);
-                    statusLabel.setText("Origem: " + v.getName() + ". Agora clique no destino.");
+                    statusLabel.setText("Origem: " + v.getName() + ". Selecione o destino.");
                 } else {
-                    // Passo 2: Selecionou o destino
-                    if (selectedSourceForEdge != v) { // Não pode criar laço para si mesmo
+                    if (selectedSourceForEdge != v) {
                         askWeightAndCreateEdge(selectedSourceForEdge, v);
                     }
-                    // Limpa seleção
                     nodeMap.get(selectedSourceForEdge).setSelected(false);
                     selectedSourceForEdge = null;
-                    statusLabel.setText("Aresta criada. Selecione outra origem ou troque de modo.");
+                    statusLabel.setText("Aresta criada.");
                 }
                 break;
 
             case SELECT_SOURCE:
                 startNode = v;
-                statusLabel.setText("Início definido: " + v.getName());
+                statusLabel.setText("Início: " + v.getName());
                 resetColors();
                 nodeFX.setColor(Color.GREEN);
                 break;
 
             case SELECT_TARGET:
                 endNode = v;
-                statusLabel.setText("Destino definido: " + v.getName());
-                resetColors(); // Remove cores antigas mas mantém start verde se houver
+                statusLabel.setText("Destino: " + v.getName());
+                resetColors();
                 if (startNode != null) nodeMap.get(startNode).setColor(Color.GREEN);
                 nodeFX.setColor(Color.RED);
                 break;
@@ -176,31 +176,23 @@ public class GraphMain extends Application {
 
     private void askWeightAndCreateEdge(Vertex source, Vertex target) {
         TextInputDialog dialog = new TextInputDialog("10");
-        dialog.setTitle("Peso da Aresta");
+        dialog.setTitle("Nova Aresta");
         dialog.setHeaderText("Conectando " + source.getName() + " -> " + target.getName());
-        dialog.setContentText("Digite o custo/distância:");
+        dialog.setContentText("Peso:");
 
         Optional<String> result = dialog.showAndWait();
         result.ifPresent(weightStr -> {
             try {
                 double weight = Double.parseDouble(weightStr);
-
-                // Cria no modelo
                 source.addEdge(target, weight);
 
-                // Cria no visual (EdgeFX)
                 NodeFX sourceFX = nodeMap.get(source);
                 NodeFX targetFX = nodeMap.get(target);
                 EdgeFX edgeFX = new EdgeFX(new Edge(target, weight), sourceFX, targetFX);
 
-                edgeMap.put(new Edge(target, weight), edgeFX); // Atenção aqui: chave do mapa pode ser tricky se Edge não tiver equals/hashcode, mas pro visual ok
-                // Adiciona edgeFX para ser desenhado
-                // OBS: Como a classe Vertex cria um NEW Edge internamente, precisamos pegar aquele específico.
-                // Truque: Pegar o último adicionado na lista do vértice
                 Edge realEdge = source.getEdges().get(source.getEdges().size() - 1);
                 edgeMap.put(realEdge, edgeFX);
-
-                graphPane.getChildren().add(0, edgeFX); // Add no índice 0 para ficar atrás
+                graphPane.getChildren().add(0, edgeFX);
 
             } catch (NumberFormatException e) {
                 statusLabel.setText("Erro: Peso inválido!");
@@ -208,78 +200,53 @@ public class GraphMain extends Application {
         });
     }
 
-    // --- LÓGICA DO ALGORITMO ---
-
     private void runDijkstra() {
         if (startNode == null || endNode == null) {
-            statusLabel.setText("ERRO: Selecione um Início e um Fim antes de rodar!");
+            statusLabel.setText("Selecione INÍCIO e FIM primeiro.");
             return;
         }
 
-        statusLabel.setText("Rodando Dijkstra de " + startNode.getName() + " para " + endNode.getName() + "...");
-
-        // Reset visual antes de rodar
+        statusLabel.setText("Calculando...");
         resetColors();
 
         new Thread(() -> {
             DijkstraSolver solver = new DijkstraSolver();
-
-            // Listener Visual (Copiado e adaptado da versão anterior)
             solver.setListener(new DijkstraListener() {
                 @Override
                 public void onVertexVisiting(Vertex v) {
-                    Platform.runLater(() -> {
-                        nodeMap.get(v).setColor(Color.YELLOW);
-                        statusLabel.setText("Visitando: " + v.getName());
-                    });
-                    sleep(600);
+                    Platform.runLater(() -> nodeMap.get(v).setColor(Color.YELLOW));
+                    sleep(500);
                 }
-
                 @Override
                 public void onVertexFinalized(Vertex v) {
                     Platform.runLater(() -> nodeMap.get(v).setColor(Color.LIGHTGRAY));
                     sleep(200);
                 }
-
                 @Override
-                public void onEdgeRelaxed(Edge e, double newDistance) {
+                public void onEdgeRelaxed(Edge e, double d) {
                     Platform.runLater(() -> {
                         EdgeFX fx = edgeMap.get(e);
-                        if (fx != null) {
-                            fx.setStroke(Color.GREEN);
-                            fx.setStrokeWidth(4);
-                        }
+                        if(fx != null) { fx.setStroke(Color.GREEN); fx.setStrokeWidth(4); }
                     });
-                    sleep(400);
+                    sleep(300);
                 }
-
                 @Override
-                public void onEdgeRejected(Edge e, double distanceSent) {
+                public void onEdgeRejected(Edge e, double d) {
                     Platform.runLater(() -> {
                         EdgeFX fx = edgeMap.get(e);
-                        if (fx != null) {
-                            fx.setStroke(Color.RED);
-                            fx.setStrokeWidth(1);
-                        }
+                        if(fx != null) { fx.setStroke(Color.RED); fx.setStrokeWidth(1); }
                     });
-                    sleep(200);
+                    sleep(100);
                 }
             });
-
             solver.findShortestPath(startNode, endNode);
-
-            Platform.runLater(() -> statusLabel.setText("Algoritmo finalizado!"));
-
+            Platform.runLater(() -> statusLabel.setText("Concluído!"));
         }).start();
     }
 
     private void resetColors() {
         nodeMap.values().forEach(n -> n.setColor(Color.LIGHTGRAY));
-        edgeMap.values().forEach(e -> {
-            e.setStroke(Color.BLACK);
-            e.setStrokeWidth(2);
-        });
-        // Restaura cores de seleção se existirem
+        edgeMap.values().forEach(e -> { e.setStroke(Color.BLACK); e.setStrokeWidth(2); });
         if (startNode != null) nodeMap.get(startNode).setColor(Color.GREEN);
         if (endNode != null) nodeMap.get(endNode).setColor(Color.RED);
     }
@@ -295,7 +262,7 @@ public class GraphMain extends Application {
     }
 
     private void sleep(long millis) {
-        try { Thread.sleep(millis); } catch (InterruptedException e) {}
+        try { Thread.sleep(millis); } catch (Exception e) {}
     }
 
     public static void main(String[] args) {

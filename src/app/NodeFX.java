@@ -14,12 +14,13 @@ public class NodeFX extends StackPane {
     private final Vertex vertex;
     private final Circle circle;
 
-    // Variáveis para controle de arraste
     private double mouseAnchorX;
     private double mouseAnchorY;
-    private boolean isDragging = false; // O segredo está aqui
+    private boolean isDragging = false;
 
-    // Interface para avisar o Main que foi um clique limpo
+    // TRAVA DE SEGURANÇA: Só permite mover se o Main deixar
+    private boolean isDraggable = false;
+
     private Consumer<NodeFX> clickHandler;
 
     public NodeFX(Vertex vertex, double x, double y) {
@@ -35,68 +36,73 @@ public class NodeFX extends StackPane {
         Text text = new Text(vertex.getName());
         getChildren().addAll(circle, text);
 
-        enableDragAndClick();
+        initMouseEvents();
     }
 
-    // Método para o Main definir o que acontece no clique
+    public void setDraggable(boolean draggable) {
+        this.isDraggable = draggable;
+        // Muda o cursor visualmente para o usuário saber
+        if (draggable) {
+            setCursor(Cursor.OPEN_HAND);
+        } else {
+            setCursor(Cursor.DEFAULT); // Ou HAND se for clicável
+        }
+    }
+
     public void setOnNodeClickListener(Consumer<NodeFX> handler) {
         this.clickHandler = handler;
     }
 
-    private void enableDragAndClick() {
-        // 1. PRESSIONOU: Prepara o terreno
+    private void initMouseEvents() {
         setOnMousePressed(event -> {
             if (!event.isPrimaryButtonDown()) return;
 
-            // Guarda onde pegamos a bolinha
-            mouseAnchorX = event.getSceneX() - getLayoutX();
-            mouseAnchorY = event.getSceneY() - getLayoutY();
+            // Se não puder mover, a gente nem começa a calcular posição
+            if (isDraggable) {
+                mouseAnchorX = event.getSceneX() - getLayoutX();
+                mouseAnchorY = event.getSceneY() - getLayoutY();
+                setCursor(Cursor.CLOSED_HAND);
+            }
 
-            // Assume que NÃO é arraste até que se prove o contrário
             isDragging = false;
-
-            setCursor(Cursor.MOVE);
-            event.consume(); // Impede que o clique atravesse pro fundo
+            event.consume();
         });
 
-        // 2. ARRASTOU: Move e marca a bandeira
         setOnMouseDragged(event -> {
             if (!event.isPrimaryButtonDown()) return;
+
+            // O BLOQUEIO MÁGICO: Se não for draggable, ignora o movimento
+            if (!isDraggable) return;
 
             double newX = event.getSceneX() - mouseAnchorX;
             double newY = event.getSceneY() - mouseAnchorY;
 
-            // Pequena zona morta: só considera arraste se mover mais de 2 pixels
-            // (Isso evita que tremedeira do mouse seja considerada arraste)
-            if (Math.abs(newX - getLayoutX()) > 2 || Math.abs(newY - getLayoutY()) > 2) {
-                isDragging = true;
-            }
-
             setLayoutX(newX);
             setLayoutY(newY);
 
+            isDragging = true; // Marca que houve movimento
             event.consume();
         });
 
-        // 3. SOLTOU: Decide se foi clique ou arraste
         setOnMouseReleased(event -> {
-            setCursor(Cursor.HAND);
+            if (isDraggable) setCursor(Cursor.OPEN_HAND);
 
+            // Se NÃO houve arraste (foi só um clique parado)
             if (!isDragging) {
-                // Se NÃO estava arrastando, então foi um CLIQUE!
                 if (clickHandler != null) {
                     clickHandler.accept(this);
                 }
             }
-            // Se estava arrastando, não fazemos nada (o nó já está no lugar novo)
 
-            isDragging = false; // Reseta para a próxima
+            isDragging = false;
             event.consume();
         });
 
-        // Efeito visual (Hover)
-        setOnMouseEntered(event -> {
-            if (!event.isPrimaryButtonDown()) setCursor(Cursor.HAND);
+        // Efeito visual simples ao passar o mouse
+        setOnMouseEntered(e -> {
+            if (!e.isPrimaryButtonDown()) {
+                setCursor(isDraggable ? Cursor.OPEN_HAND : Cursor.HAND);
+            }
         });
     }
 
