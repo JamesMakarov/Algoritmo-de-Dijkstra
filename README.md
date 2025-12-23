@@ -1,6 +1,6 @@
 <div align="center">
 
-  # 🕸️ Dijkstra Visualizer Pro
+  # 🕸️ Dijkstra Visualizer
   
   **Uma ferramenta de alta performance para visualização de Algoritmos de Grafos.**
   
