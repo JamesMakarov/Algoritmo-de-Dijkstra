@@ -151,12 +151,14 @@ public class GraphMain extends Application {
 
         Separator sep1 = new Separator(); sep1.setOrientation(javafx.geometry.Orientation.VERTICAL);
         Separator sep2 = new Separator(); sep2.setOrientation(javafx.geometry.Orientation.VERTICAL);
+        // Separador novo para agrupar os botões de ação
+        Separator sep3 = new Separator(); sep3.setOrientation(javafx.geometry.Orientation.VERTICAL);
 
         Button btnRun = new Button("RODAR DIJKSTRA ▶");
         btnRun.setStyle("-fx-background-color: #39ff14; -fx-text-fill: black; -fx-font-weight: bold; -fx-background-radius: 5; -fx-cursor: hand; -fx-effect: dropshadow(three-pass-box, rgba(57, 255, 20, 0.4), 10, 0, 0, 0);");
         btnRun.setOnAction(e -> runDijkstra());
 
-        Button btnClear = new Button("Limpar");
+        Button btnClear = new Button("Limpar Tudo");
         btnClear.setStyle("-fx-background-color: #ff4444; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5; -fx-cursor: hand;");
         btnClear.setOnAction(e -> clearGraph());
 
@@ -164,7 +166,13 @@ public class GraphMain extends Application {
         btnRandom.setStyle("-fx-background-color: #9b59b6; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5; -fx-cursor: hand;");
         btnRandom.setOnAction(e -> generateRandomGraph());
 
-        ToolBar tb = new ToolBar(btnMove, btnAddNode, btnAddEdge, sep1, btnRemove, sep2, btnSetStart, btnSetEnd, new Separator(), btnRun, btnClear, btnRandom);
+        // --- NOVO BOTÃO RESETAR ---
+        Button btnReset = new Button("🔄 Resetar");
+        btnReset.setStyle("-fx-background-color: #e67e22; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5; -fx-cursor: hand;");
+        btnReset.setOnAction(e -> resetAlgorithm());
+
+        // Adicionei o sep3 e o btnReset na barra
+        ToolBar tb = new ToolBar(btnMove, btnAddNode, btnAddEdge, sep1, btnRemove, sep2, btnSetStart, btnSetEnd, sep3, btnRandom, btnReset, btnRun, btnClear);
         tb.setStyle("-fx-background-color: " + TOOLBAR_COLOR + "; -fx-padding: 10px; -fx-spacing: 10px;");
         return tb;
     }
@@ -624,5 +632,10 @@ public class GraphMain extends Application {
                 showErrorDialog("Número Inválido", "Por favor, digite um número inteiro.");
             }
         });
+    }
+
+    private void resetAlgorithm() {
+        resetColors(); // Remove apenas a pintura (amarelo/verde/vermelho/azul)
+        statusLabel.setText("Visualização resetada. O grafo foi mantido.");
     }
 }
