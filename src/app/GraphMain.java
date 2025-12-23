@@ -352,7 +352,6 @@ public class GraphMain extends Application {
         new Thread(() -> {
             DijkstraSolver solver = new DijkstraSolver();
 
-            // Listener para animação (mantido igual)
             solver.setListener(new DijkstraListener() {
                 @Override
                 public void onVertexVisiting(Vertex v) {
@@ -391,25 +390,23 @@ public class GraphMain extends Application {
                 }
             });
 
-            // --- AQUI ESTAVA O ERRO ---
-            // Antes você ignorava o retorno. Agora vamos guardar em 'path'.
+            // Captura o resultado
             java.util.List<Vertex> path = solver.findShortestPath(startNode, endNode);
 
             Platform.runLater(() -> {
-                // VERIFICAÇÃO CRÍTICA: Se a lista está vazia, falhou!
+                // --- VERIFICAÇÃO DE CAMINHO VAZIO ---
                 if (path.isEmpty()) {
                     statusLabel.setText("❌ ERRO: Destino inalcançável!");
 
                     if (nodeMap.containsKey(endNode)) {
-                        nodeMap.get(endNode).setColor(Color.RED); // Pinta destino de VERMELHO
+                        nodeMap.get(endNode).setColor(Color.RED); // Destino fica VERMELHO
                     }
 
                     showErrorDialog("Rota Impossível",
-                            "Não existe caminho entre " + startNode.getName() + " e " + endNode.getName() + ".\n" +
-                                    "O grafo é desconexo ou as direções das setas impedem a chegada.");
+                            "O algoritmo terminou mas não conseguiu chegar em " + endNode.getName() + ".\n" +
+                                    "Verifique se as setas estão apontando para a direção correta.");
 
                 } else {
-                    // SUCESSO
                     double totalCost = calculatePathCost(path);
                     statusLabel.setText("✅ Sucesso! Custo Total: " + totalCost);
                     highlightPath(path);
@@ -450,7 +447,6 @@ public class GraphMain extends Application {
         for (int i = 0; i < path.size() - 1; i++) {
             Vertex u = path.get(i);
             Vertex v = path.get(i+1);
-            // Procura a aresta que conecta U a V
             for (Edge e : u.getEdges()) {
                 if (e.getTarget() == v) {
                     cost += e.getWeight();
@@ -461,7 +457,6 @@ public class GraphMain extends Application {
         return cost;
     }
 
-    // Destaca o caminho vencedor em Azul Neon
     private void highlightPath(java.util.List<Vertex> path) {
         for (int i = 0; i < path.size() - 1; i++) {
             Vertex u = path.get(i);
@@ -483,8 +478,7 @@ public class GraphMain extends Application {
         }
     }
 
-    // Mostra o Popup de Erro (Estilizado Dark Mode)
-    // Mostra o Popup de Erro (Versão Customizada e Legível)
+    // Popup de Erro Customizado (Com texto BRANCO para não sumir no fundo escuro)
     private void showErrorDialog(String title, String content) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
         alert.setTitle(title);
@@ -518,57 +512,117 @@ public class GraphMain extends Application {
     }
 
     private void generateRandomGraph() {
-        clearGraph(); // Limpa tudo antes
+        // 1. Cria o Dialog para perguntar a quantidade
+        Dialog<String> dialog = new Dialog<>();
+        dialog.setTitle("Gerar Grafo Aleatório");
 
-        java.util.Random rand = new java.util.Random();
-        int numNodes = 30; // Quantidade de nós (aumente para 50 se quiser mais caos!)
-        int width = 900;
-        int height = 600;
+        // Estilo Dark Mode (Consistente com o resto do app)
+        DialogPane pane = dialog.getDialogPane();
+        pane.setStyle("-fx-background-color: #2d2d2d;");
 
-        List<Vertex> vertices = new ArrayList<>();
+        Label headerLabel = new Label("Configuração do Grafo");
+        headerLabel.setStyle("-fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 16px; -fx-padding: 10px;");
+        pane.setHeader(headerLabel);
 
-        // 1. Cria Nós espalhados
-        for (int i = 0; i < numNodes; i++) {
-            double x = 50 + rand.nextDouble() * (width - 100);
-            double y = 50 + rand.nextDouble() * (height - 150); // -150 pra não pegar na toolbar/status
-            createNode(x, y);
-        }
+        VBox content = new VBox(10);
+        content.setPadding(new Insets(10));
 
-        // Recupera os nós criados do mapa para conectar
-        vertices.addAll(nodeMap.keySet());
+        Label msgLabel = new Label("Quantidade de Vértices (Recomendado: 10-30):");
+        msgLabel.setStyle("-fx-text-fill: #cccccc;");
 
-        // 2. Cria Arestas Aleatórias
-        // Cada nó vai tentar se conectar a 2 ou 3 outros nós aleatórios
-        for (Vertex u : vertices) {
-            int connections = 1 + rand.nextInt(3); // 1 a 3 conexões por nó
+        TextField input = new TextField("15"); // Valor padrão
+        input.setStyle("-fx-background-color: #3e3e3e; -fx-text-fill: white; -fx-font-size: 14px;");
 
-            for (int j = 0; j < connections; j++) {
-                Vertex v = vertices.get(rand.nextInt(vertices.size()));
+        content.getChildren().addAll(msgLabel, input);
+        pane.setContent(content);
 
-                // Evita auto-loop e arestas duplicadas (simplificado)
-                if (u != v) {
-                    double weight = 1 + rand.nextInt(20); // Peso entre 1 e 20
+        ButtonType okButtonType = new ButtonType("Gerar", ButtonBar.ButtonData.OK_DONE);
+        pane.getButtonTypes().addAll(okButtonType, ButtonType.CANCEL);
 
-                    // Cria no modelo
-                    u.addEdge(v, weight);
+        // Estiliza o botão de ação
+        javafx.scene.Node okButton = pane.lookupButton(okButtonType);
+        okButton.setStyle("-fx-background-color: #9b59b6; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand;");
 
-                    // Cria no visual
-                    Edge realEdge = u.getEdges().get(u.getEdges().size() - 1);
-                    NodeFX sourceFX = nodeMap.get(u);
-                    NodeFX targetFX = nodeMap.get(v);
+        Platform.runLater(input::requestFocus);
 
-                    EdgeFX edgeFX = new EdgeFX(realEdge, sourceFX, targetFX);
-                    edgeFX.setOnMouseClicked(ev -> {
-                        if (currentMode == Mode.REMOVE) removeEdge(realEdge);
-                    });
+        dialog.setResultConverter(dialogButton -> {
+            if (dialogButton == okButtonType) return input.getText();
+            return null;
+        });
 
-                    edgeMap.put(realEdge, edgeFX);
-                    // Adiciona no índice 1 (acima do grid, abaixo dos nós)
-                    graphPane.getChildren().add(1, edgeFX);
+        // 2. Processa a resposta
+        Optional<String> result = dialog.showAndWait();
+        result.ifPresent(qtyStr -> {
+            try {
+                int numNodes = Integer.parseInt(qtyStr);
+
+                // Validações de segurança
+                if (numNodes < 2) {
+                    showErrorDialog("Poucos Vértices", "O grafo precisa de pelo menos 2 vértices para brincar.");
+                    return;
                 }
-            }
-        }
+                if (numNodes > 100) {
+                    showErrorDialog("Muitos Vértices", "Mais de 100 vértices pode deixar a tela ilegível.\nTente um número menor.");
+                    return;
+                }
 
-        statusLabel.setText("✨ Grafo Aleatório Gerado! Selecione Início e Fim.");
+                // 3. A Geração do Grafo (O Caos Organizado)
+                clearGraph();
+
+                java.util.Random rand = new java.util.Random();
+                // Margens para não ficar colado na borda ou em cima da toolbar
+                double minX = 50;
+                double maxX = graphPane.getWidth() - 50;
+                if (maxX <= 0) maxX = 800; // Fallback se a janela ainda não abriu totalmente
+
+                double minY = 50;
+                double maxY = graphPane.getHeight() - 50;
+                if (maxY <= 0) maxY = 500;
+
+                List<Vertex> vertices = new ArrayList<>();
+
+                // Cria Nós
+                for (int i = 0; i < numNodes; i++) {
+                    double x = minX + rand.nextDouble() * (maxX - minX);
+                    double y = minY + rand.nextDouble() * (maxY - minY);
+                    createNode(x, y);
+                }
+
+                vertices.addAll(nodeMap.keySet());
+
+                // Cria Arestas (Cada nó tenta se ligar a 1 ou 2 outros)
+                for (Vertex u : vertices) {
+                    int connections = 1 + rand.nextInt(2);
+
+                    for (int j = 0; j < connections; j++) {
+                        Vertex v = vertices.get(rand.nextInt(vertices.size()));
+
+                        // Evita laços (u->u)
+                        if (u != v) {
+                            double weight = 1 + rand.nextInt(20); // Peso 1 a 20
+
+                            u.addEdge(v, weight);
+                            Edge realEdge = u.getEdges().get(u.getEdges().size() - 1);
+
+                            NodeFX sourceFX = nodeMap.get(u);
+                            NodeFX targetFX = nodeMap.get(v);
+
+                            EdgeFX edgeFX = new EdgeFX(realEdge, sourceFX, targetFX);
+                            edgeFX.setOnMouseClicked(ev -> {
+                                if (currentMode == Mode.REMOVE) removeEdge(realEdge);
+                            });
+
+                            edgeMap.put(realEdge, edgeFX);
+                            // Índice 1 para ficar acima do grid (0)
+                            graphPane.getChildren().add(1, edgeFX);
+                        }
+                    }
+                }
+                statusLabel.setText("✨ Grafo com " + numNodes + " vértices gerado! Selecione Início e Fim.");
+
+            } catch (NumberFormatException e) {
+                showErrorDialog("Número Inválido", "Por favor, digite um número inteiro.");
+            }
+        });
     }
 }
