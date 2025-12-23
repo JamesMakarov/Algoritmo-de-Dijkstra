@@ -1,42 +1,74 @@
-# 🕸️ Dijkstra Visualizer - Pro Edition
+<div align="center">
 
-![Java](https://img.shields.io/badge/Java-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white)
-![JavaFX](https://img.shields.io/badge/JavaFX-2D2D30?style=for-the-badge&logo=java&logoColor=white)
-![Status](https://img.shields.io/badge/Status-Completed-success)
+  # 🕸️ Dijkstra Visualizer Pro
+  
+  **Uma ferramenta de alta performance para visualização de Algoritmos de Grafos.**
+  
+  ![Java](https://img.shields.io/badge/Java-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white)
+  ![JavaFX](https://img.shields.io/badge/JavaFX-2D2D30?style=for-the-badge&logo=java&logoColor=white)
+  ![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
+  ![Status](https://img.shields.io/badge/Status-Finished-39ff14?style=for-the-badge)
 
-Um visualizador interativo e moderno para o **Algoritmo de Dijkstra**, desenvolvido em JavaFX. Este projeto permite criar grafos, manipular vértices e arestas visualmente e observar o comportamento do algoritmo de caminho mínimo em tempo real.
+  ---
+  
+  ![Demonstração do Projeto](demo.gif)
+  
+  *Visualização em tempo real do algoritmo de caminho mínimo com arquitetura desacoplada.*
 
-![Screenshot do Projeto](screenshot.png)
-*(Adicione um print da sua tela aqui nomeado como screenshot.png)*
+</div>
 
-## ✨ Funcionalidades
+## 📖 Sobre o Projeto
 
-- **🎨 Interface Gráfica Moderna**: Estilo Dark Mode com efeitos Neon e grid estilo engenharia.
-- **🖱️ Drag & Drop**: Arraste vértices livremente pela tela com a ferramenta de mover.
-- **🛠️ Editor Completo**:
-    - Adicionar Vértices e Arestas (com pesos personalizados).
-    - Remover elementos (Nós ou Conexões) com apenas um clique.
-    - Validação de entrada (impede pesos negativos).
-- **⚡ Visualização em Tempo Real**:
-    - Animação passo-a-passo do algoritmo explorando o grafo.
-    - Indicação visual de nós visitados, finalizados e arestas relaxadas.
-    - **Tratamento de Erros**: Detecção automática de grafos desconexos ou caminhos impossíveis.
+Este projeto não é apenas uma visualização de algoritmo, é um estudo de caso em **Engenharia de Software** aplicada. O objetivo foi criar uma aplicação desktop robusta, responsiva e visualmente moderna para demonstrar o funcionamento do **Algoritmo de Dijkstra**.
 
-## 🏗️ Arquitetura e Padrões de Projeto
+Diferente de implementações simples, este visualizador foca em UX (Experiência do Usuário) e Arquitetura Limpa, garantindo que a interface permaneça fluida (60 FPS) mesmo durante o processamento de grafos complexos.
 
-O projeto foi construído seguindo boas práticas de Engenharia de Software:
+## ✨ Funcionalidades Principais
 
-- **Observer Pattern**: Utilizado para desacoplar a lógica do algoritmo (`DijkstraSolver`) da interface gráfica (`GraphMain`). O algoritmo "notifica" a UI sobre cada passo sem saber quem está ouvindo.
-- **Multithreading**: O algoritmo roda em uma thread separada para garantir que a animação seja fluida e não congele a interface do usuário.
-- **JavaFX Custom Components**: Criação de componentes visuais personalizados (`NodeFX`, `EdgeFX`) que encapsulam sua própria lógica de eventos e renderização.
+### 🎨 Interface & UX
+* **Modo Dark Neon:** Design moderno inspirado em ferramentas de engenharia e cyberpunk.
+* **Drag & Drop Fluido:** Manipulação livre de vértices e arestas.
+* **Feedback Visual:** Cores distintas para nós visitados (Amarelo), finalizados (Verde) e caminhos descartados (Vermelho).
 
-## 🚀 Como Rodar
+### ⚙️ Engenharia & Performance
+* **Gerador de Grafos Aleatórios:** Crie cenários de teste complexos (10 a 100 nós) com um único clique.
+* **Thread Safety:** O algoritmo roda em *Worker Threads*, prevenindo o congelamento da interface (ANR).
+* **Validação em Tempo Real:** * Bloqueio de arestas com pesos negativos.
+    * Detecção automática de grafos desconexos.
+    * Tratamento de caminhos impossíveis.
+
+## 🛠️ Arquitetura e Design Patterns
+
+O código foi estruturado para ser escalável e testável:
+
+| Padrão / Conceito | Aplicação no Projeto |
+| :--- | :--- |
+| **Observer Pattern** | Desacopla o Algoritmo (`DijkstraSolver`) da Interface (`GraphMain`). O backend apenas "notifica" eventos, sem saber quem os desenha. |
+| **Multithreading** | Uso de `Platform.runLater()` para sincronizar o processamento pesado com a *JavaFX Application Thread*. |
+| **Composite Pattern** | Componentes visuais como `NodeFX` e `EdgeFX` encapsulam sua própria lógica de renderização e eventos. |
+
+## 🎮 Como Usar (Guia de Controles)
+
+A barra de ferramentas foi projetada para ser intuitiva:
+
+| Botão / Cor | Função |
+| :--- | :--- |
+| **✋ Mover** | Arraste os nós para organizar o grafo. |
+| **➕ Nó / 🔗 Aresta** | Ferramentas de edição para desenhar manualmente. |
+| **🚩 Início / 🏁 Fim** | Define os pontos de partida e chegada. |
+| **🟪 Gerar (Roxo)** | Cria um grafo aleatório proceduralmente. |
+| **🟩 Rodar (Verde)** | Inicia a animação do algoritmo. |
+| **🟧 Resetar (Laranja)** | Limpa apenas a "tinta" da animação, mantendo o grafo. |
+| **🟥 Limpar (Vermelho)** | Apaga tudo da tela (Reset total). |
+
+## 🚀 Como Rodar Localmente
 
 ### Pré-requisitos
-- JDK 21 ou superior.
-- Maven (opcional, se for gerenciar dependências).
+* **Java JDK 21** ou superior.
+* Maven (opcional) ou qualquer IDE compatível (IntelliJ IDEA recomendado).
 
-### Passos
-1. Clone o repositório:
+### Passo a Passo
+
+1. **Clone o repositório**
    ```bash
    git clone [https://github.com/seu-usuario/dijkstra-visualizer.git](https://github.com/seu-usuario/dijkstra-visualizer.git)
