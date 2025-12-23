@@ -11,8 +11,6 @@
 
   ---
   
-  ![Demonstração do Projeto](demo.gif)
-  
   *Visualização em tempo real do algoritmo de caminho mínimo com arquitetura desacoplada.*
 
 </div>
